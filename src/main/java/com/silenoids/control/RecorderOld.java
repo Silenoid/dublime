@@ -37,7 +37,7 @@ public class RecorderOld {
                 TargetDataLine line = (TargetDataLine) AudioSystem.getLine(info);
                 line.open(format);
 
-                while(!line.isOpen()) Thread.sleep(10);
+                while (!line.isOpen()) Thread.sleep(10);
 
                 AudioInputStream iStream = new AudioInputStream(line);
 
@@ -75,7 +75,7 @@ public class RecorderOld {
             TargetDataLine line = (TargetDataLine) AudioSystem.getLine(info);
             line.open(format);
 
-            while(!line.isOpen()) Thread.sleep(10);
+            while (!line.isOpen()) Thread.sleep(10);
 
             System.out.println("millis: " + millisToRecord);
             System.out.println("line is open");

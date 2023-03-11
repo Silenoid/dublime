@@ -59,13 +59,13 @@ public class PlayerOld {
         if (isPlaying.get()) {
             stop();
         }
-        playingThread = new Thread(playingRunnable,  " Playing audio");
+        playingThread = new Thread(playingRunnable, " Playing audio");
         playingThread.start();
         Sandglass.getInstance().startSandglass(getDurationInMillis());
     }
 
     public void stop() {
-        if(playingThread != null) {
+        if (playingThread != null) {
             isPlaying.set(false);
             try {
                 playingThread.join();

@@ -1,6 +1,6 @@
 package com.silenoids.control;
 
-import javax.swing.JProgressBar;
+import javax.swing.*;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -13,14 +13,14 @@ public class Sandglass {
     private JProgressBar jProgressBar;
 
     public static Sandglass getInstance(JProgressBar jProgressBar) {
-        if(instance == null) {
+        if (instance == null) {
             instance = new Sandglass(jProgressBar);
         }
         return instance;
     }
 
     public static Sandglass getInstance() {
-        if(instance == null) {
+        if (instance == null) {
             throw new IllegalStateException("As first call, you have to pass a JProgressBar");
         }
         return instance;
