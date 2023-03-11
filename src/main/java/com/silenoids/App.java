@@ -1,5 +1,7 @@
+package com.silenoids;
+
 import com.formdev.flatlaf.FlatDarkLaf;
-import view.MainView;
+import com.silenoids.view.MainView;
 
 import javax.swing.*;
 
@@ -12,9 +14,9 @@ public class App {
         FlatDarkLaf.setup();
 
         SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Finestra di provola");
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             MainView mainView = new MainView();
+            JFrame frame = new JFrame("Alias recorder");
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setContentPane(mainView.mainPanel);
             frame.setSize(600, 400);
             frame.setVisible(true);
