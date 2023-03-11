@@ -3,9 +3,8 @@ package com.silenoids.view;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
-import com.silenoids.control.Player;
 import com.silenoids.control.PlayerNew;
-import com.silenoids.control.Recorder;
+import com.silenoids.control.RecorderNew;
 import com.silenoids.control.Sandglass;
 import com.silenoids.utils.FileUtils;
 import com.silenoids.view.component.ContextMenu;
@@ -20,7 +19,7 @@ import java.io.File;
 public class MainView {
 
     private PlayerNew player;
-    private Recorder recorder;
+    private RecorderNew recorder;
 
     public JPanel mainPanel;
     private JButton inputDirBtn;
@@ -40,7 +39,7 @@ public class MainView {
     public MainView() {
         Sandglass.getInstance(sandglassBar);
         player = new PlayerNew();
-        recorder = new Recorder();
+        recorder = new RecorderNew();
         inputFileListModel = new DefaultListModel<>();
         fileList.setModel(inputFileListModel);
 
@@ -143,7 +142,28 @@ public class MainView {
                 JOptionPane.showMessageDialog(mainPanel, "Both input and output directories have to be selected");
                 return;
             }
-            recorder.recordAudio(outputDirPath, fileList.getSelectedValue(), player.getDurationInMillis());
+
+            recorder.stop();
+            Sandglass.getInstance().startSandglass(player.getDurationInMillis());
+            recorder.start();
+            try {
+                Thread.sleep(player.getDurationInMillis() + 200);
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+            recorder.stop();
+
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+            FileUtils.saveAudioStreamToFile(outputDirPath, fileList.getSelectedValue(), recorder.getAudioInputStream());
+
+            System.out.println("---Running thread list:");
+            Thread.getAllStackTraces().keySet().stream().map(Thread::getName).filter(s -> s.startsWith(" ")).sorted().forEach(System.out::println);
+
+
         });
     }
 

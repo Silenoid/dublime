@@ -5,92 +5,117 @@ import com.silenoids.utils.FileUtils;
 import javax.sound.sampled.*;
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class Recorder {
 
-    private final AudioFormat outputLineFormat;
-    private TargetDataLine micLine;
-
-    private CyclicBarrier synchronizedGate;
-    private Thread stopperThread;
-    private Thread writerThread;
-
-    public Recorder() {
-        outputLineFormat = new AudioFormat(
-                22050,
-                16,
-                1,
-                true,
-                true
-        );
-
-        try {
-            setUp();
-        } catch (LineUnavailableException e) {
-            e.printStackTrace();
-        }
-
-        synchronizedGate = new CyclicBarrier(2);
-    }
-
     public void recordAudio(String dirPath, String fileName, long millisToRecord) {
         File targetOutputFile = FileUtils.loadDirFile(dirPath, fileName);
-        AudioInputStream audioInputStream = new AudioInputStream(micLine);
 
-        planToStopRecording(millisToRecord);
-        recordAudio(audioInputStream, targetOutputFile);
+        writeAudioToFileBlocking(targetOutputFile, millisToRecord);
 
-        System.out.println("---Running thread list:");
-        Thread.getAllStackTraces().keySet().stream().map(Thread::getName).filter(s -> s.startsWith(" ")).sorted().forEach(System.out::println);
+        printThread();
 
         Sandglass.getInstance().startSandglass(millisToRecord);
     }
 
-    private void setUp() throws LineUnavailableException {
-        DataLine.Info info = new DataLine.Info(TargetDataLine.class, outputLineFormat);
-        if (!AudioSystem.isLineSupported(info)) {
-            throw new LineUnavailableException("No line supported for the DataLine Info");
-        }
-        micLine = (TargetDataLine) AudioSystem.getLine(info);
-        micLine.open(outputLineFormat, micLine.getBufferSize());
-    }
-
-    private void planToStopRecording(long millis) {
-        if (stopperThread == null) {
-            stopperThread = new Thread(() -> {
-                System.out.println("started stopper per millis: " + millis);
-                try {
-                    synchronizedGate.await();
-                    micLine.start();
-                    Thread.sleep(millis);
-                } catch (InterruptedException | BrokenBarrierException ex) {
-                    ex.printStackTrace();
-                } finally {
-                    micLine.stop();
+    private void writeAudioToFile(File targetOutputFile, long millisToRecord) {
+        new Thread(() -> {
+            try {
+                AudioFormat format = new AudioFormat(
+                        22050,
+                        16,
+                        1,
+                        true,
+                        true
+                );
+                DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
+                if (!AudioSystem.isLineSupported(info)) {
+                    throw new LineUnavailableException("No line supported for the DataLine Info");
                 }
-            }, " Recording stopper");
-        }
+                TargetDataLine line = (TargetDataLine) AudioSystem.getLine(info);
+                line.open(format);
 
-        stopperThread.start();
+                while(!line.isOpen()) Thread.sleep(10);
+
+                AudioInputStream iStream = new AudioInputStream(line);
+
+                Timer timer = new Timer("Record stopper timer");
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        line.stop();
+                        line.close();
+                    }
+                }, millisToRecord);
+
+                line.start();
+                AudioSystem.write(iStream, AudioFileFormat.Type.WAVE, targetOutputFile);
+
+            } catch (IOException | LineUnavailableException | InterruptedException ex) {
+                ex.printStackTrace();
+            }
+        }, " Recording writing").start();
     }
 
-    private void recordAudio(AudioInputStream audioInputStream, File targetOutputFile) {
-        if (writerThread == null) {
-            writerThread = new Thread(() -> {
-                System.out.println("started writer su output " + targetOutputFile);
+    private void writeAudioToFileBlocking(File targetOutputFile, long millisToRecord) {
+        try {
+            AudioFormat format = new AudioFormat(
+                    22050,
+                    16,
+                    1,
+                    true,
+                    true
+            );
+            DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
+            if (!AudioSystem.isLineSupported(info)) {
+                throw new LineUnavailableException("No line supported for the DataLine Info");
+            }
+            TargetDataLine line = (TargetDataLine) AudioSystem.getLine(info);
+            line.open(format);
 
-                try {
-                    synchronizedGate.await();
-                    AudioSystem.write(audioInputStream, AudioFileFormat.Type.WAVE, targetOutputFile);
-                } catch (InterruptedException | BrokenBarrierException | IOException ex) {
-                    ex.printStackTrace();
+            while(!line.isOpen()) Thread.sleep(10);
+
+            System.out.println("millis: " + millisToRecord);
+            System.out.println("line is open");
+
+            line.start();
+
+            AudioInputStream iStream = new AudioInputStream(line);
+
+            Thread stopperThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    System.out.println("started waiting to stop");
+                    try {
+                        Thread.sleep(millisToRecord);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                    System.out.println("stopping");
+
+                    line.stop();
+                    line.close();
+
+                    System.out.println("stopped");
+
+
                 }
-            }, " Recording writing");
-        }
+            });
+            stopperThread.start();
 
-        writerThread.start();
+            System.out.println("gonna line start");
+
+            AudioSystem.write(iStream, AudioFileFormat.Type.WAVE, targetOutputFile);
+
+        } catch (IOException | LineUnavailableException | InterruptedException ex) {
+            ex.printStackTrace();
+        }
     }
 
+    private void printThread() {
+        System.out.println("---Running thread list:");
+        Thread.getAllStackTraces().keySet().stream().map(Thread::getName).filter(s -> s.startsWith(" ")).sorted().forEach(System.out::println);
+    }
 }
