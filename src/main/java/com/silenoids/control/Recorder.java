@@ -1,121 +1,113 @@
 package com.silenoids.control;
 
-import com.silenoids.utils.FileUtils;
-
 import javax.sound.sampled.*;
-import java.io.File;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Timer;
-import java.util.TimerTask;
 
-public class Recorder {
+public class Recorder implements Runnable {
+    private AudioInputStream audioInputStream;
+    private AudioFormat format;
+    public Thread thread;
+    private double duration;
 
-    public void recordAudio(String dirPath, String fileName, long millisToRecord) {
-        File targetOutputFile = FileUtils.loadDirFile(dirPath, fileName);
-
-        writeAudioToFileBlocking(targetOutputFile, millisToRecord);
-
-        printThread();
-
-        Sandglass.getInstance().startSandglass(millisToRecord);
+    public Recorder() {
+        format = new AudioFormat(
+                22050,
+                16,
+                1,
+                true,
+                true
+        );
     }
 
-    private void writeAudioToFile(File targetOutputFile, long millisToRecord) {
-        new Thread(() -> {
-            try {
-                AudioFormat format = new AudioFormat(
-                        22050,
-                        16,
-                        1,
-                        true,
-                        true
-                );
-                DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
-                if (!AudioSystem.isLineSupported(info)) {
-                    throw new LineUnavailableException("No line supported for the DataLine Info");
-                }
-                TargetDataLine line = (TargetDataLine) AudioSystem.getLine(info);
-                line.open(format);
-
-                while(!line.isOpen()) Thread.sleep(10);
-
-                AudioInputStream iStream = new AudioInputStream(line);
-
-                Timer timer = new Timer("Record stopper timer");
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        line.stop();
-                        line.close();
-                    }
-                }, millisToRecord);
-
-                line.start();
-                AudioSystem.write(iStream, AudioFileFormat.Type.WAVE, targetOutputFile);
-
-            } catch (IOException | LineUnavailableException | InterruptedException ex) {
-                ex.printStackTrace();
-            }
-        }, " Recording writing").start();
+    public void start() {
+        thread = new Thread(this);
+        thread.setName("Capture Microphone");
+        thread.start();
     }
 
-    private void writeAudioToFileBlocking(File targetOutputFile, long millisToRecord) {
-        try {
-            AudioFormat format = new AudioFormat(
-                    22050,
-                    16,
-                    1,
-                    true,
-                    true
-            );
-            DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
-            if (!AudioSystem.isLineSupported(info)) {
-                throw new LineUnavailableException("No line supported for the DataLine Info");
-            }
-            TargetDataLine line = (TargetDataLine) AudioSystem.getLine(info);
-            line.open(format);
+    public void stop() {
+        thread = null;
+    }
 
-            while(!line.isOpen()) Thread.sleep(10);
+    @Override
+    public void run() {
+        duration = 0;
 
-            System.out.println("millis: " + millisToRecord);
-            System.out.println("line is open");
-
-            line.start();
-
-            AudioInputStream iStream = new AudioInputStream(line);
-
-            Thread stopperThread = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    System.out.println("started waiting to stop");
-                    try {
-                        Thread.sleep(millisToRecord);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    System.out.println("stopping");
-
-                    line.stop();
-                    line.close();
-
-                    System.out.println("stopped");
-
-
-                }
-            });
-            stopperThread.start();
-
-            System.out.println("gonna line start");
-
-            AudioSystem.write(iStream, AudioFileFormat.Type.WAVE, targetOutputFile);
-
-        } catch (IOException | LineUnavailableException | InterruptedException ex) {
+        try (final ByteArrayOutputStream out = new ByteArrayOutputStream(); final TargetDataLine line = getTargetDataLineForRecord()) {
+            int frameSizeInBytes = format.getFrameSize();
+            int bufferLengthInFrames = line.getBufferSize() / 8;
+            final int bufferLengthInBytes = bufferLengthInFrames * frameSizeInBytes;
+            buildByteOutputStream(out, line, frameSizeInBytes, bufferLengthInBytes);
+            this.audioInputStream = new AudioInputStream(line);
+            setAudioInputStream(convertToAudioIStream(out, frameSizeInBytes));
+            audioInputStream.reset();
+        } catch (IOException ex) {
             ex.printStackTrace();
         }
     }
 
-    private void printThread() {
-        System.out.println("---Running thread list:");
-        Thread.getAllStackTraces().keySet().stream().map(Thread::getName).filter(s -> s.startsWith(" ")).sorted().forEach(System.out::println);
+    public void buildByteOutputStream(final ByteArrayOutputStream out, final TargetDataLine line, int frameSizeInBytes, final int bufferLengthInBytes) throws IOException {
+        final byte[] data = new byte[bufferLengthInBytes];
+        int numBytesRead;
+
+        line.start();
+        while (thread != null) {
+            if ((numBytesRead = line.read(data, 0, bufferLengthInBytes)) == -1) {
+                break;
+            }
+            out.write(data, 0, numBytesRead);
+        }
     }
+
+    private void setAudioInputStream(AudioInputStream aStream) {
+        this.audioInputStream = aStream;
+    }
+
+    public AudioInputStream convertToAudioIStream(final ByteArrayOutputStream out, int frameSizeInBytes) {
+        byte[] audioBytes = out.toByteArray();
+        ByteArrayInputStream bais = new ByteArrayInputStream(audioBytes);
+        AudioInputStream audioStream = new AudioInputStream(bais, format, audioBytes.length / frameSizeInBytes);
+        long milliseconds = (long) ((audioInputStream.getFrameLength() * 1000) / format.getFrameRate());
+        duration = milliseconds / 1000.0;
+        System.out.println("Recorded duration in seconds:" + duration);
+        return audioStream;
+    }
+
+    public TargetDataLine getTargetDataLineForRecord() {
+        TargetDataLine line;
+        DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
+        if (!AudioSystem.isLineSupported(info)) {
+            return null;
+        }
+        try {
+            line = (TargetDataLine) AudioSystem.getLine(info);
+            line.open(format, line.getBufferSize());
+        } catch (final Exception ex) {
+            return null;
+        }
+        return line;
+    }
+
+    public AudioInputStream getAudioInputStream() {
+        return audioInputStream;
+    }
+
+    public AudioFormat getFormat() {
+        return format;
+    }
+
+    public void setFormat(AudioFormat format) {
+        this.format = format;
+    }
+
+    public Thread getThread() {
+        return thread;
+    }
+
+    public double getDuration() {
+        return duration;
+    }
+
 }

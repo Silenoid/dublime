@@ -3,8 +3,8 @@ package com.silenoids.view;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
-import com.silenoids.control.PlayerNew;
-import com.silenoids.control.RecorderNew;
+import com.silenoids.control.Player;
+import com.silenoids.control.Recorder;
 import com.silenoids.control.Sandglass;
 import com.silenoids.utils.FileUtils;
 import com.silenoids.view.component.ContextMenu;
@@ -18,8 +18,8 @@ import java.io.File;
 
 public class MainView {
 
-    private PlayerNew player;
-    private RecorderNew recorder;
+    private Player player;
+    private Recorder recorder;
 
     public JPanel mainPanel;
     private JButton inputDirBtn;
@@ -38,8 +38,8 @@ public class MainView {
 
     public MainView() {
         Sandglass.getInstance(sandglassBar);
-        player = new PlayerNew();
-        recorder = new RecorderNew();
+        player = new Player();
+        recorder = new Recorder();
         inputFileListModel = new DefaultListModel<>();
         fileList.setModel(inputFileListModel);
 

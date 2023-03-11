@@ -1,93 +1,83 @@
 package com.silenoids.control;
 
+import com.goxr3plus.streamplayer.stream.StreamPlayer;
+import com.goxr3plus.streamplayer.stream.StreamPlayerEvent;
+import com.goxr3plus.streamplayer.stream.StreamPlayerException;
+import com.goxr3plus.streamplayer.stream.StreamPlayerListener;
 import com.silenoids.utils.FileUtils;
 
-import javax.sound.sampled.*;
 import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Map;
 
-public class Player {
+public class Player extends StreamPlayer implements StreamPlayerListener {
 
-    private AudioInputStream stream;
-    private final AtomicReference<Clip> audioClip = new AtomicReference<>();
-    private final AtomicBoolean isPlaying = new AtomicBoolean(false);
-
-    private Runnable playingRunnable;
-    private Thread playingThread;
+    private boolean canActuallyPlay = false;
 
     public Player() {
-        isPlaying.set(false);
-
-        playingRunnable = () -> {
-            try {
-                isPlaying.set(true);
-                audioClip.get().start();
-                while (isPlaying.get() && !audioClip.get().isRunning()) Thread.sleep(10);
-                while (isPlaying.get() && audioClip.get().isRunning()) Thread.sleep(10);
-            } catch (InterruptedException e) {
-                System.out.println("Listening thread has been interrupted");
-            } finally {
-                audioClip.get().close();
-                isPlaying.set(false);
-            }
-        };
+        addStreamPlayerListener(this);
     }
 
     public void loadAudioFile(String dirPath, String fileName) {
-        File audioFile = FileUtils.loadDirFile(dirPath, fileName);
-
-        if (audioClip.get() != null && audioClip.get().isRunning()) {
-            audioClip.get().stop();
-            audioClip.get().drain();
-        }
+        super.stop();
 
         try {
-            stream = AudioSystem.getAudioInputStream(audioFile);
-            AudioFormat audioFormat = stream.getFormat();
-            DataLine.Info inputClipInfo = new DataLine.Info(Clip.class, audioFormat);
-            audioClip.set((Clip) AudioSystem.getLine(inputClipInfo));
-            audioClip.get().open(stream);
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            File audioFile = FileUtils.loadDirFile(dirPath, fileName);
+            super.open(audioFile);
+        } catch (StreamPlayerException e) {
             e.printStackTrace();
         }
-
     }
 
     public void play() {
-        if (isPlaying.get()) {
+        if (isPlaying()) {
             stop();
         }
-        playingThread = new Thread(playingRunnable,  " Playing audio");
-        playingThread.start();
+        try {
+            super.play();
+        } catch (StreamPlayerException e) {
+            e.printStackTrace();
+        }
         Sandglass.getInstance().startSandglass(getDurationInMillis());
     }
 
     public void stop() {
-        if(playingThread != null) {
-            isPlaying.set(false);
+        super.stop();
+        while (!canActuallyPlay) {
             try {
-                playingThread.join();
-                if (stream != null) {
-                    stream.close();
-                }
-            } catch (InterruptedException | IOException e) {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
     }
 
     public String getDurationText() {
-        String durationText = "-.--";
-        if (audioClip.get() != null) {
-            durationText = String.valueOf(audioClip.get().getMicrosecondLength() / 1000000.0).substring(0, 4) + " seconds";
-        }
-        return durationText;
+        return (getDurationInMillis() / 1000.0) + " seconds";
     }
 
     public long getDurationInMillis() {
-        return audioClip.get() != null ? (long) (audioClip.get().getMicrosecondLength() / 1000.0) : 0;
+        return super.getDurationInMilliseconds();
     }
 
+    @Override
+    public void opened(Object o, Map<String, Object> map) {
+
+    }
+
+    @Override
+    public void progress(int i, long l, byte[] bytes, Map<String, Object> map) {
+
+    }
+
+    @Override
+    public void statusUpdated(StreamPlayerEvent streamPlayerEvent) {
+        switch (streamPlayerEvent.getPlayerStatus()) {
+            case PLAYING:
+                canActuallyPlay = false;
+                break;
+            case STOPPED:
+                canActuallyPlay = true;
+                break;
+        }
+    }
 }
