@@ -10,6 +10,7 @@ import com.silenoids.utils.FileUtils;
 import com.silenoids.view.component.ContextMenu;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
@@ -81,15 +82,54 @@ public class MainView {
                     JOptionPane.showMessageDialog(mainPanel, "Both input and output directories have to be selected");
                     return;
                 }
+
                 // TODO: tasti per registrare
                 //fileList.getActionForKeyStroke()
-                // TODO: colora completati
-//                fileList.setCellRenderer(new ListCellRenderer<String>() {
-//                    @Override
-//                    public Component getListCellRendererComponent(JList<? extends String> list, String value, int index, boolean isSelected, boolean cellHasFocus) {
-//                        return null;
-//                    }
-//                });
+
+                fileList.setCellRenderer(new ListCellRenderer<>() {
+                    @Override
+                    public Component getListCellRendererComponent(JList<? extends String> list, String value, int index, boolean isSelected, boolean cellHasFocus) {
+                        Color bgColor = UIManager.getColor("List.dropCellBackground");
+                        Color fgColor = UIManager.getColor("List.dropCellForeground");
+                        Color fgExistsColor = UIManager.getColor("Component.linkColor");
+
+                        DefaultListCellRenderer renderer = new DefaultListCellRenderer();
+                        boolean outputFileExists = FileUtils.fileExists(outputDirPath, value);
+
+                        renderer.setEnabled(list.isEnabled());
+                        renderer.setFont(list.getFont());
+
+                        Border border = null;
+                        if (cellHasFocus) {
+                            if (isSelected) {
+                                border = UIManager.getBorder("List.focusSelectedCellHighlightBorder");
+                            }
+                            if (border == null) {
+                                border = UIManager.getBorder("List.focusCellHighlightBorder");
+                            }
+                        } else {
+                            border = UIManager.getBorder("List.cellNoFocusBorder");
+                        }
+                        renderer.setBorder(border);
+
+                        if (isSelected) {
+                            renderer.setBackground(bgColor == null ? list.getSelectionBackground() : bgColor);
+                            renderer.setForeground(fgColor == null ? list.getSelectionForeground() : fgColor);
+                        } else {
+                            renderer.setBackground(list.getBackground());
+                            renderer.setForeground(list.getForeground());
+                        }
+
+                        if (outputFileExists) {
+                            renderer.setText(" ■ " + value);
+                            renderer.setForeground(fgExistsColor);
+                        } else {
+                            renderer.setText(value);
+                        }
+
+                        return renderer;
+                    }
+                });
 
                 player.loadAudioFile(inputDirPath, fileList.getSelectedValue());
                 inputTime.setText(player.getDurationText());
@@ -143,6 +183,7 @@ public class MainView {
                 return;
             }
 
+            setRecordingStateView(true);
             recorder.stop();
             Sandglass.getInstance().startSandglass(player.getDurationInMillis());
             recorder.start();
@@ -160,17 +201,27 @@ public class MainView {
             }
             FileUtils.saveAudioStreamToFile(outputDirPath, fileList.getSelectedValue(), recorder.getAudioInputStream());
 
-            System.out.println("---Running thread list:");
-            Thread.getAllStackTraces().keySet().stream().map(Thread::getName).filter(s -> s.startsWith(" ")).sorted().forEach(System.out::println);
+            setRecordingStateView(false);
 
-
+            //printThreads();
         });
     }
 
-    void setRecordingStateView(boolean setActive) {
+    void setRecordingStateView(boolean isRecording) {
+        fileList.setEnabled(!isRecording);
+        playInputBtn.setEnabled(!isRecording);
+        recordOutputButton.setEnabled(!isRecording);
+        inputDirBtn.setEnabled(!isRecording);
+        outputDirBtn.setEnabled(!isRecording);
+        recordOutputButton.setEnabled(!isRecording);
+
+        playOutputButton.setEnabled(!isRecording);
+        // TODO: if output exists
     }
 
-    void setPlayingStateView(boolean setActive) {
+    private void printThreads() {
+        System.out.println("---Running thread list:");
+        Thread.getAllStackTraces().keySet().stream().map(Thread::getName).filter(s -> s.startsWith(" ")).sorted().forEach(System.out::println);
     }
 
     {

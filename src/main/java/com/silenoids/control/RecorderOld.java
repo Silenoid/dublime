@@ -116,6 +116,6 @@ public class RecorderOld {
 
     private void printThread() {
         System.out.println("---Running thread list:");
-        Thread.getAllStackTraces().keySet().stream().map(Thread::getName).filter(s -> s.startsWith(" ")).sorted().forEach(System.out::println);
+        Thread.getAllStackTraces().keySet().stream().map(Thread::getName).sorted().forEach(System.out::println);
     }
 }
