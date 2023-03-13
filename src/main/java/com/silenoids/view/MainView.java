@@ -12,13 +12,17 @@ import com.silenoids.view.component.ContextMenu;
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.event.*;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.prefs.Preferences;
 
 public class MainView {
 
+    private Preferences preferences;
     private Player player;
     private Recorder recorder;
 
@@ -36,117 +40,63 @@ public class MainView {
     private String inputDirPath;
     private String outputDirPath;
     private DefaultListModel<String> inputFileListModel;
+    private String copiedOutputFileName;
 
     public MainView() {
         Sandglass.getInstance(sandglassBar);
         player = new Player();
         recorder = new Recorder();
         inputFileListModel = new DefaultListModel<>();
+
+        setupComponents();
+        setupHandlers();
+
+        loadPreferences();
+    }
+
+    private void setupComponents() {
         fileList.setModel(inputFileListModel);
 
-        inputDirBtn.addActionListener((ActionEvent e) -> {
+        fileList.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
+            Color bgColor = UIManager.getColor("List.dropCellBackground");
+            Color fgColor = UIManager.getColor("List.dropCellForeground");
+            Color fgExistsColor = UIManager.getColor("Component.linkColor");
 
-            // Select dir
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            fileChooser.showOpenDialog(mainPanel);
-            File selectedDirFile = fileChooser.getSelectedFile();
-            inputDirPath = selectedDirFile.getPath();
+            DefaultListCellRenderer renderer = new DefaultListCellRenderer();
+            boolean outputFileExists = FileUtils.fileExists(outputDirPath, value);
 
-            // Elaborate dir
-            if (selectedDirFile != null) {
-                inputDirBtn.setText(inputDirPath);
-                for (File file : selectedDirFile.listFiles()) {
-                    inputFileListModel.addElement(file.getName());
+            renderer.setEnabled(list.isEnabled());
+            renderer.setFont(list.getFont());
+
+            Border border = null;
+            if (cellHasFocus) {
+                if (isSelected) {
+                    border = UIManager.getBorder("List.focusSelectedCellHighlightBorder");
                 }
-            }
-
-        });
-
-        outputDirBtn.addActionListener((ActionEvent e) -> {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-            fileChooser.showOpenDialog(mainPanel);
-            File selectedDirPath = fileChooser.getSelectedFile();
-            if (selectedDirPath == null) {
-                outputDirBtn.setText("No directory selected");
+                if (border == null) {
+                    border = UIManager.getBorder("List.focusCellHighlightBorder");
+                }
             } else {
-                outputDirPath = selectedDirPath.getPath();
-                outputDirBtn.setText(outputDirPath);
+                border = UIManager.getBorder("List.cellNoFocusBorder");
             }
-        });
+            renderer.setBorder(border);
 
-        fileList.addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting()) {
-                if (inputDirPath == null || outputDirPath == null) {
-                    JOptionPane.showMessageDialog(mainPanel, "Both input and output directories have to be selected");
-                    return;
-                }
-
-                // TODO: tasti per registrare
-                //fileList.getActionForKeyStroke()
-
-                fileList.setCellRenderer(new ListCellRenderer<>() {
-                    @Override
-                    public Component getListCellRendererComponent(JList<? extends String> list, String value, int index, boolean isSelected, boolean cellHasFocus) {
-                        Color bgColor = UIManager.getColor("List.dropCellBackground");
-                        Color fgColor = UIManager.getColor("List.dropCellForeground");
-                        Color fgExistsColor = UIManager.getColor("Component.linkColor");
-
-                        DefaultListCellRenderer renderer = new DefaultListCellRenderer();
-                        boolean outputFileExists = FileUtils.fileExists(outputDirPath, value);
-
-                        renderer.setEnabled(list.isEnabled());
-                        renderer.setFont(list.getFont());
-
-                        Border border = null;
-                        if (cellHasFocus) {
-                            if (isSelected) {
-                                border = UIManager.getBorder("List.focusSelectedCellHighlightBorder");
-                            }
-                            if (border == null) {
-                                border = UIManager.getBorder("List.focusCellHighlightBorder");
-                            }
-                        } else {
-                            border = UIManager.getBorder("List.cellNoFocusBorder");
-                        }
-                        renderer.setBorder(border);
-
-                        if (isSelected) {
-                            renderer.setBackground(bgColor == null ? list.getSelectionBackground() : bgColor);
-                            renderer.setForeground(fgColor == null ? list.getSelectionForeground() : fgColor);
-                        } else {
-                            renderer.setBackground(list.getBackground());
-                            renderer.setForeground(list.getForeground());
-                        }
-
-                        if (outputFileExists) {
-                            renderer.setText(" ■ " + value);
-                            renderer.setForeground(fgExistsColor);
-                        } else {
-                            renderer.setText(value);
-                        }
-
-                        return renderer;
-                    }
-                });
-
-                player.loadAudioFile(inputDirPath, fileList.getSelectedValue());
-                inputTime.setText(player.getDurationText());
-
-                playInputBtn.setEnabled(FileUtils.fileExists(inputDirPath, fileList.getSelectedValue()));
-                playOutputButton.setEnabled(FileUtils.fileExists(outputDirPath, fileList.getSelectedValue()));
-                recordOutputButton.setEnabled(true);
-
-                if (autoplayBox.isSelected()) {
-                    player.play();
-                }
+            if (isSelected) {
+                renderer.setBackground(bgColor == null ? list.getSelectionBackground() : bgColor);
+                renderer.setForeground(fgColor == null ? list.getSelectionForeground() : fgColor);
+            } else {
+                renderer.setBackground(list.getBackground());
+                renderer.setForeground(list.getForeground());
             }
-        });
 
-        playOutputButton.addActionListener(e -> {
-            player.loadAudioFile(outputDirPath, fileList.getSelectedValue());
-            player.play();
+            if (outputFileExists) {
+                renderer.setText(" ■ " + value);
+                renderer.setForeground(fgExistsColor);
+            } else {
+                renderer.setText(value);
+            }
+
+            return renderer;
         });
 
         fileList.addMouseListener(new MouseAdapter() {
@@ -169,45 +119,185 @@ public class MainView {
             }
         });
 
+    }
+
+    private void setupHandlers() {
+        inputDirBtn.addActionListener((ActionEvent e) -> {
+
+            // Select dir
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            fileChooser.showOpenDialog(mainPanel);
+            File selectedDirFile = fileChooser.getSelectedFile();
+
+            inputDirSetup(selectedDirFile);
+        });
+
+        outputDirBtn.addActionListener((ActionEvent e) -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            fileChooser.showOpenDialog(mainPanel);
+            File selectedDirPath = fileChooser.getSelectedFile();
+
+            outputDirSetup(selectedDirPath);
+        });
+
+        fileList.addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                if (inputDirPath == null || outputDirPath == null) {
+                    sendMessage("Both input and output directories have to be selected");
+                    return;
+                }
+
+                player.loadAudioFile(inputDirPath, fileList.getSelectedValue());
+                inputTime.setText(player.getDurationText());
+
+                playInputBtn.setEnabled(FileUtils.fileExists(inputDirPath, fileList.getSelectedValue()));
+                playOutputButton.setEnabled(FileUtils.fileExists(outputDirPath, fileList.getSelectedValue()));
+                recordOutputButton.setEnabled(true);
+
+                if (autoplayBox.isSelected()) {
+                    player.play();
+                }
+            }
+        });
+
+        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, InputEvent.CTRL_DOWN_MASK), "playInputAudio");
+        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, InputEvent.CTRL_DOWN_MASK), "playOutputAudio");
+        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.CTRL_DOWN_MASK), "recordOutputAudio");
+        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK), "copyFile");
+        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK), "pasteFiles");
+        fileList.getActionMap().put("playInputAudio", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                player.loadAudioFile(inputDirPath, fileList.getSelectedValue());
+                player.play();
+            }
+        });
+        fileList.getActionMap().put("playOutputAudio", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!FileUtils.fileExists(outputDirPath, fileList.getSelectedValue())) {
+                    sendMessage("No recorded audio found");
+                    return;
+                }
+                player.loadAudioFile(outputDirPath, fileList.getSelectedValue());
+                player.play();
+            }
+        });
+        fileList.getActionMap().put("recordOutputAudio", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                setRecordingStateView(true);
+                startRecordingProcess();
+                setRecordingStateView(false);
+                fileList.requestFocus();
+            }
+        });
+        fileList.getActionMap().put("copyFile", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (!FileUtils.fileExists(outputDirPath, fileList.getSelectedValue())) {
+                    sendMessage("The output recorded file does not exists");
+                    return;
+                }
+                if (fileList.getSelectedValuesList().size() != 1) {
+                    sendMessage("You can only copy one single output file to replicate");
+                    return;
+                }
+                copiedOutputFileName = fileList.getSelectedValue();
+            }
+        });
+        fileList.getActionMap().put("pasteFiles", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (copiedOutputFileName == null || copiedOutputFileName.isBlank()) {
+                    sendMessage("Before replicating, you must copy an output file");
+                    return;
+                }
+                fileList.getSelectedValuesList().forEach(replicatedFileName -> {
+                    try {
+                        Files.copy(
+                                Path.of(outputDirPath, copiedOutputFileName),
+                                Path.of(outputDirPath, replicatedFileName),
+                                StandardCopyOption.REPLACE_EXISTING
+                        );
+                    } catch (IOException ex) {
+                        sendMessage("Something went wrong during replication");
+                    }
+                });
+            }
+        });
+
+        playOutputButton.addActionListener(e -> {
+            player.loadAudioFile(outputDirPath, fileList.getSelectedValue());
+            player.play();
+        });
+
         playInputBtn.addActionListener(e -> {
             if (inputDirPath == null || outputDirPath == null) {
-                JOptionPane.showMessageDialog(mainPanel, "Both input and output directories have to be selected");
+                sendMessage("Both input and output directories have to be selected");
                 return;
             }
             player.play();
         });
 
         recordOutputButton.addActionListener(e -> {
-            if (inputDirPath == null || outputDirPath == null) {
-                JOptionPane.showMessageDialog(mainPanel, "Both input and output directories have to be selected");
-                return;
-            }
-
             setRecordingStateView(true);
-            recorder.stop();
-            Sandglass.getInstance().startSandglass(player.getDurationInMillis());
-            recorder.start();
-            try {
-                Thread.sleep(player.getDurationInMillis() + 200);
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
-            recorder.stop();
-
-            try {
-                Thread.sleep(300);
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
-            FileUtils.saveAudioStreamToFile(outputDirPath, fileList.getSelectedValue(), recorder.getAudioInputStream());
-
+            startRecordingProcess();
             setRecordingStateView(false);
+        });
 
-            //printThreads();
+        autoplayBox.addActionListener(e -> {
+            preferences.putBoolean("autoplayEnabled", autoplayBox.isSelected());
         });
     }
 
-    void setRecordingStateView(boolean isRecording) {
+    private void outputDirSetup(File selectedDirPath) {
+        if (selectedDirPath != null && !selectedDirPath.getPath().isBlank()) {
+            outputDirPath = selectedDirPath.getPath();
+            outputDirBtn.setText(outputDirPath);
+            preferences.put("outputDir", selectedDirPath.getAbsolutePath());
+        }
+    }
+
+    private void inputDirSetup(File selectedDirFile) {
+        if (selectedDirFile != null) {
+            inputDirPath = selectedDirFile.getPath();
+            inputDirBtn.setText(inputDirPath);
+            for (File file : selectedDirFile.listFiles()) {
+                inputFileListModel.addElement(file.getName());
+            }
+            preferences.put("inputDir", selectedDirFile.getAbsolutePath());
+        }
+    }
+
+    private void startRecordingProcess() {
+        if (inputDirPath == null || outputDirPath == null) {
+            sendMessage("Both input and output directories have to be selected");
+            return;
+        }
+        recorder.stop();
+        Sandglass.getInstance().startSandglass(player.getDurationInMillis());
+        recorder.start();
+        try {
+            Thread.sleep(player.getDurationInMillis() + 200);
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+        recorder.stop();
+
+        try {
+            Thread.sleep(300);
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+        FileUtils.saveAudioStreamToFile(outputDirPath, fileList.getSelectedValue(), recorder.getAudioInputStream());
+
+        //printThreads();
+    }
+
+    private void setRecordingStateView(boolean isRecording) {
         fileList.setEnabled(!isRecording);
         playInputBtn.setEnabled(!isRecording);
         recordOutputButton.setEnabled(!isRecording);
@@ -222,6 +312,24 @@ public class MainView {
     private void printThreads() {
         System.out.println("---Running thread list:");
         Thread.getAllStackTraces().keySet().stream().map(Thread::getName).filter(s -> s.startsWith(" ")).sorted().forEach(System.out::println);
+    }
+
+    private void sendMessage(String msg) {
+        JOptionPane.showMessageDialog(mainPanel, msg);
+    }
+
+    private void loadPreferences() {
+        preferences = Preferences.userNodeForPackage(MainView.class);
+        autoplayBox.setSelected(preferences.getBoolean("autoplayEnabled", true));
+        String prefInputDir = preferences.get("inputDir", null);
+        if (prefInputDir != null && !prefInputDir.isBlank()) {
+            inputDirSetup(new File(prefInputDir));
+        }
+        String prefOutputDir = preferences.get("outputDir", null);
+        if (prefInputDir != null && !prefInputDir.isBlank()) {
+            outputDirSetup(new File(prefOutputDir));
+        }
+
     }
 
     {
