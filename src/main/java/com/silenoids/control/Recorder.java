@@ -48,7 +48,7 @@ public class Recorder implements Runnable {
         }
     }
 
-    public void buildByteOutputStream(final ByteArrayOutputStream out, final TargetDataLine line, int frameSizeInBytes, final int bufferLengthInBytes) throws IOException {
+    public void buildByteOutputStream(final ByteArrayOutputStream out, final TargetDataLine line, int frameSizeInBytes, final int bufferLengthInBytes) {
         final byte[] data = new byte[bufferLengthInBytes];
         int numBytesRead;
 

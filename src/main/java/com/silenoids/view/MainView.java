@@ -7,17 +7,20 @@ import com.silenoids.control.Player;
 import com.silenoids.control.Recorder;
 import com.silenoids.control.Sandglass;
 import com.silenoids.utils.FileUtils;
-import com.silenoids.view.component.ContextMenu;
 
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.prefs.Preferences;
 
 public class MainView {
@@ -98,27 +101,6 @@ public class MainView {
 
             return renderer;
         });
-
-        fileList.addMouseListener(new MouseAdapter() {
-
-            @Override
-            public void mousePressed(MouseEvent mouseEvent) {
-                if (mouseEvent.isPopupTrigger())
-                    doPop(mouseEvent);
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent mouseEvent) {
-                if (mouseEvent.isPopupTrigger())
-                    doPop(mouseEvent);
-            }
-
-            private void doPop(MouseEvent mouseEvent) {
-                ContextMenu menu = new ContextMenu();
-                menu.show(mouseEvent.getComponent(), mouseEvent.getX(), mouseEvent.getY());
-            }
-        });
-
     }
 
     private void setupHandlers() {
@@ -248,9 +230,7 @@ public class MainView {
             setRecordingStateView(false);
         });
 
-        autoplayBox.addActionListener(e -> {
-            preferences.putBoolean("autoplayEnabled", autoplayBox.isSelected());
-        });
+        autoplayBox.addActionListener(e -> preferences.putBoolean("autoplayEnabled", autoplayBox.isSelected()));
     }
 
     private void outputDirSetup(File selectedDirPath) {
@@ -265,9 +245,11 @@ public class MainView {
         if (selectedDirFile != null && selectedDirFile.exists()) {
             inputDirPath = selectedDirFile.getPath();
             inputDirBtn.setText(inputDirPath);
-            for (File file : selectedDirFile.listFiles()) {
-                inputFileListModel.addElement(file.getName());
-            }
+
+            Arrays.stream(Objects.requireNonNull(selectedDirFile.listFiles()))
+                    .sorted()
+                    .forEach(file -> inputFileListModel.addElement(file.getName()));
+
             preferences.put("inputDir", selectedDirFile.getAbsolutePath());
         }
     }
