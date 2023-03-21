@@ -277,24 +277,30 @@ public class MainView {
             sendMessage("Both input and output directories have to be selected");
             return;
         }
-        recorder.stop();
-        Sandglass.getInstance().startSandglass(player.getDurationInMillis());
-        recorder.start();
-        try {
-            Thread.sleep(player.getDurationInMillis() + 200);
-        } catch (InterruptedException ex) {
-            ex.printStackTrace();
-        }
-        recorder.stop();
 
-        try {
-            Thread.sleep(300);
-        } catch (InterruptedException ex) {
-            ex.printStackTrace();
-        }
-        FileUtils.saveAudioStreamToFile(outputDirPath, fileList.getSelectedValue(), recorder.getAudioInputStream());
+        new Thread(() -> {
+            setRecordingStateView(true);
+            recorder.stop();
+            Sandglass.getInstance().startSandglass(player.getDurationInMillis());
+            recorder.start();
+            try {
+                Thread.sleep(player.getDurationInMillis() + 200);
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+            recorder.stop();
 
-        //printThreads();
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            }
+            FileUtils.saveAudioStreamToFile(outputDirPath, fileList.getSelectedValue(), recorder.getAudioInputStream());
+            printThreads();
+            setRecordingStateView(false);
+
+        }, " MainView recording thread").start();
+
     }
 
     private void setRecordingStateView(boolean isRecording) {
@@ -305,7 +311,7 @@ public class MainView {
         outputDirBtn.setEnabled(!isRecording);
         recordOutputButton.setEnabled(!isRecording);
 
-        playOutputButton.setEnabled(!isRecording);
+        playOutputButton.setEnabled(false);
         // TODO: if output exists
     }
 
@@ -359,6 +365,7 @@ public class MainView {
         outputDirBtn.setText("Output Directory");
         panel2.add(outputDirBtn, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         inputDirBtn = new JButton();
+        inputDirBtn.setEnabled(true);
         inputDirBtn.setText("Input Directory");
         panel2.add(inputDirBtn, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JScrollPane scrollPane1 = new JScrollPane();
@@ -391,6 +398,7 @@ public class MainView {
         panel3.add(autoplayBox, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel4 = new JPanel();
         panel4.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panel4.setEnabled(true);
         panel1.add(panel4, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         sandglassBar = new JProgressBar();
         panel4.add(sandglassBar, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
