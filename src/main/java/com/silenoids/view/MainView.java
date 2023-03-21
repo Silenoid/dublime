@@ -262,7 +262,7 @@ public class MainView {
     }
 
     private void inputDirSetup(File selectedDirFile) {
-        if (selectedDirFile != null) {
+        if (selectedDirFile != null && selectedDirFile.exists()) {
             inputDirPath = selectedDirFile.getPath();
             inputDirBtn.setText(inputDirPath);
             for (File file : selectedDirFile.listFiles()) {
