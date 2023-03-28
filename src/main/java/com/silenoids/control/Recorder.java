@@ -1,8 +1,11 @@
 package com.silenoids.control;
 
+import com.silenoids.utils.FileUtils;
+
 import javax.sound.sampled.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 
 public class Recorder implements Runnable {
@@ -11,20 +14,33 @@ public class Recorder implements Runnable {
     public Thread thread;
     private double duration;
 
-    public Recorder() {
-        format = new AudioFormat(
-                22050,
-                16,
-                1,
-                true,
-                true
-        );
-    }
+    public void startWithAlias(String dirPath, String fileName) {
+        File aliasAudioFile = FileUtils.loadDirFile(dirPath, fileName);
 
-    public void start() {
-        thread = new Thread(this);
-        thread.setName("Capture Microphone");
-        thread.start();
+        try {
+            AudioFileFormat aliasFileFormat = AudioSystem.getAudioFileFormat(aliasAudioFile);
+
+            if(aliasFileFormat.getFormat().getSampleRate() == 22050) {
+                format = new AudioFormat(
+                        22000,
+                        16,
+                        1,
+                        true,
+                        true
+                );
+            } else {
+                format = aliasFileFormat.getFormat();
+            }
+
+            long frameLength = aliasFileFormat.getFrameLength();
+            // TODO: let the duration depend on this
+
+            thread = new Thread(this);
+            thread.setName("Capture Microphone");
+            thread.start();
+        } catch (UnsupportedAudioFileException | IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void stop() {

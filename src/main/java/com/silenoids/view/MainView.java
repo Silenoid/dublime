@@ -46,18 +46,18 @@ public class MainView {
     private String copiedOutputFileName;
 
     public MainView() {
-        Sandglass.getInstance(sandglassBar);
-        player = new Player();
-        recorder = new Recorder();
-        inputFileListModel = new DefaultListModel<>();
-
         setupComponents();
         setupHandlers();
 
         loadPreferences();
+
+        player = new Player();
+        recorder = new Recorder();
     }
 
     private void setupComponents() {
+        Sandglass.getInstance(sandglassBar);
+        inputFileListModel = new DefaultListModel<>();
         fileList.setModel(inputFileListModel);
 
         fileList.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
@@ -107,7 +107,12 @@ public class MainView {
         inputDirBtn.addActionListener((ActionEvent e) -> {
 
             // Select dir
-            JFileChooser fileChooser = new JFileChooser();
+            JFileChooser fileChooser;
+            if (inputDirPath != null && !inputDirPath.equals("Input Directory")) {
+                fileChooser = new JFileChooser(inputDirPath);
+            } else {
+                fileChooser = new JFileChooser();
+            }
             fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             fileChooser.showOpenDialog(mainPanel);
             File selectedDirFile = fileChooser.getSelectedFile();
@@ -116,7 +121,13 @@ public class MainView {
         });
 
         outputDirBtn.addActionListener((ActionEvent e) -> {
-            JFileChooser fileChooser = new JFileChooser();
+
+            JFileChooser fileChooser;
+            if (outputDirPath != null && !outputDirPath.equals("Output Directory")) {
+                fileChooser = new JFileChooser(outputDirPath);
+            } else {
+                fileChooser = new JFileChooser();
+            }
             fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
             fileChooser.showOpenDialog(mainPanel);
             File selectedDirPath = fileChooser.getSelectedFile();
@@ -221,6 +232,7 @@ public class MainView {
                 sendMessage("Both input and output directories have to be selected");
                 return;
             }
+            player.loadAudioFile(inputDirPath, fileList.getSelectedValue());
             player.play();
         });
 
@@ -231,6 +243,7 @@ public class MainView {
         });
 
         autoplayBox.addActionListener(e -> preferences.putBoolean("autoplayEnabled", autoplayBox.isSelected()));
+
     }
 
     private void outputDirSetup(File selectedDirPath) {
@@ -262,9 +275,10 @@ public class MainView {
 
         new Thread(() -> {
             setRecordingStateView(true);
+            player.loadAudioFile(inputDirPath, fileList.getSelectedValue());
             recorder.stop();
             Sandglass.getInstance().startSandglass(player.getDurationInMillis());
-            recorder.start();
+            recorder.startWithAlias(inputDirPath, fileList.getSelectedValue());
             try {
                 Thread.sleep(player.getDurationInMillis() + 200);
             } catch (InterruptedException ex) {
@@ -292,9 +306,7 @@ public class MainView {
         inputDirBtn.setEnabled(!isRecording);
         outputDirBtn.setEnabled(!isRecording);
         recordOutputButton.setEnabled(!isRecording);
-
-        playOutputButton.setEnabled(false);
-        // TODO: if output exists
+        playOutputButton.setEnabled(!isRecording);
     }
 
     private void printThreads() {
@@ -317,7 +329,6 @@ public class MainView {
         if (prefInputDir != null && !prefInputDir.isBlank()) {
             outputDirSetup(new File(prefOutputDir));
         }
-
     }
 
     {
