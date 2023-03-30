@@ -4,6 +4,7 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import com.silenoids.view.MainView;
 
 import javax.swing.*;
+import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -17,12 +18,13 @@ public class App {
 
         FlatDarkLaf.setup();
 
-//        ImageIcon imageIcon = new ImageIcon("mic.png");
+        URL appIcon = App.class.getClassLoader().getResource("mic.png");
+        ImageIcon imageIcon = new ImageIcon(appIcon);
 
         SwingUtilities.invokeLater(() -> {
             MainView mainView = new MainView();
             JFrame frame = new JFrame("Alias recorder");
-//            frame.setIconImage(imageIcon.getImage());
+            frame.setIconImage(imageIcon.getImage());
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setContentPane(mainView.mainPanel);
             frame.setSize(600, 400);

@@ -16,6 +16,7 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -39,6 +40,7 @@ public class MainView {
     private JLabel inputTime;
     private JProgressBar sandglassBar;
     private JCheckBox autoplayBox;
+    private JButton donateBtn;
 
     private String inputDirPath;
     private String outputDirPath;
@@ -244,6 +246,14 @@ public class MainView {
 
         autoplayBox.addActionListener(e -> preferences.putBoolean("autoplayEnabled", autoplayBox.isSelected()));
 
+        donateBtn.addActionListener(e -> {
+            try {
+                Desktop desktop = Desktop.getDesktop();
+                desktop.browse(URI.create("https://www.buymeacoffee.com/sileno"));
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
     }
 
     private void outputDirSetup(File selectedDirPath) {
@@ -326,7 +336,7 @@ public class MainView {
             inputDirSetup(new File(prefInputDir));
         }
         String prefOutputDir = preferences.get("outputDir", null);
-        if (prefInputDir != null && !prefInputDir.isBlank()) {
+        if (prefOutputDir != null && !prefOutputDir.isBlank()) {
             outputDirSetup(new File(prefOutputDir));
         }
     }
