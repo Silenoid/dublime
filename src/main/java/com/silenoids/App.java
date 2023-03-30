@@ -1,6 +1,6 @@
 package com.silenoids;
 
-import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.intellijthemes.FlatDarkFlatIJTheme;
 import com.silenoids.view.MainView;
 
 import javax.swing.*;
@@ -16,7 +16,7 @@ public class App {
 
         Logger.getLogger("com.goxr3plus.streamplayer.stream.StreamPlayer").setLevel(Level.OFF);
 
-        FlatDarkLaf.setup();
+        FlatDarkFlatIJTheme.setup();
 
         URL appIcon = App.class.getClassLoader().getResource("mic.png");
         ImageIcon imageIcon = new ImageIcon(appIcon);
@@ -24,10 +24,11 @@ public class App {
         SwingUtilities.invokeLater(() -> {
             MainView mainView = new MainView();
             JFrame frame = new JFrame("Alias recorder");
-            frame.setIconImage(imageIcon.getImage());
-            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setSize(1600, 900);
+            frame.setLocationRelativeTo(null);  //center
             frame.setContentPane(mainView.mainPanel);
-            frame.setSize(600, 400);
+            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+            frame.setIconImage(imageIcon.getImage());
             frame.setVisible(true);
         });
     }

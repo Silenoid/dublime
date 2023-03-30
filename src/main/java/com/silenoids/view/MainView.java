@@ -41,6 +41,7 @@ public class MainView {
     private JProgressBar sandglassBar;
     private JCheckBox autoplayBox;
     private JButton donateBtn;
+    private JButton helpBtn;
 
     private String inputDirPath;
     private String outputDirPath;
@@ -253,6 +254,15 @@ public class MainView {
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
+        });
+
+        helpBtn.addActionListener(e -> {
+            InfoDialog dialog = new InfoDialog();
+            dialog.setTitle("Help");
+            dialog.setSize(new Dimension(600, 700));
+            dialog.setLocationRelativeTo(mainPanel);
+            dialog.setVisible(true);
+            dialog.dispose();
         });
     }
 
