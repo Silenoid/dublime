@@ -1,6 +1,9 @@
 package com.silenoids.view;
 
+import com.silenoids.utils.HTMLContentUtils;
+
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -16,6 +19,7 @@ public class InfoDialog extends JDialog {
         getRootPane().setDefaultButton(backBtn);
         this.setSize(1600, 900);
 
+        infoContent.setText(HTMLContentUtils.getHelpContent());
 
         backBtn.addActionListener(e -> onClose());
 
@@ -33,6 +37,16 @@ public class InfoDialog extends JDialog {
 
     private void onClose() {
         dispose();
+    }
+
+    // Quick dialog test
+    // TODO: remove
+    public static void main(String[] args) {
+        InfoDialog dialog = new InfoDialog();
+        dialog.setSize(new Dimension(600, 900));
+        dialog.setLocationRelativeTo(null);
+        dialog.setVisible(true);
+        System.exit(0);
     }
 
 }
