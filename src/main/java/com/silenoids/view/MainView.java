@@ -24,11 +24,13 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.prefs.Preferences;
 
+import static javax.swing.JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT;
+
 public class MainView {
 
     private Preferences preferences;
-    private Player player;
-    private Recorder recorder;
+    private final Player player;
+    private final Recorder recorder;
 
     public JPanel mainPanel;
     private JButton inputDirBtn;
@@ -158,11 +160,13 @@ public class MainView {
             }
         });
 
-        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, InputEvent.CTRL_DOWN_MASK), "playInputAudio");
-        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, InputEvent.CTRL_DOWN_MASK), "playOutputAudio");
-        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.CTRL_DOWN_MASK), "recordOutputAudio");
-        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK), "copyFile");
-        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK), "pasteFiles");
+        // TODO: broader focus for hotkeys
+        // TODO: condition in which input and output dir are the same
+        fileList.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, InputEvent.CTRL_DOWN_MASK), "playInputAudio");
+        fileList.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, InputEvent.CTRL_DOWN_MASK), "playOutputAudio");
+        fileList.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.CTRL_DOWN_MASK), "recordOutputAudio");
+        fileList.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK), "copyFile");
+        fileList.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK), "pasteFiles");
         fileList.getActionMap().put("playInputAudio", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
