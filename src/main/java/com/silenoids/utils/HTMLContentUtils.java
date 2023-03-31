@@ -1,34 +1,21 @@
 package com.silenoids.utils;
 
+import static j2html.TagCreator.*;
+
 public class HTMLContentUtils {
     public static String getHelpContent() {
-        // @formatter: off
-        return
-"""
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-<h1>Helping you out</h1>
-<p>wewe bello facimme</p>
-""" +
-img("donateBtn.png") +
-img("giftest.gif")
-+ """
-</body>
-</html>
-""";
-        // @formatter: on
+        return body(
+                h1("Helping you out!"),
+                p("wewe bello facimme"),
+                img().withSrc(getImgSrc("donateBtn.png")),
+                br(),
+                img().withSrc(getImgSrc("giftest.gif"))
+
+        ).render();
     }
 
-    private static String img(String imgPath) {
-        System.out.println(HTMLContentUtils.class.getClassLoader().getResource(imgPath));
-        return "<center><img src=\"" +
-                HTMLContentUtils.class.getClassLoader().getResource(imgPath)
-                + "\" ></center>";
+    private static String getImgSrc(String imgPath) {
+        return HTMLContentUtils.class.getClassLoader().getResource(imgPath).toString();
     }
 
 }

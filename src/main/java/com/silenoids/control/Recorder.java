@@ -32,9 +32,6 @@ public class Recorder implements Runnable {
                 format = aliasFileFormat.getFormat();
             }
 
-            long frameLength = aliasFileFormat.getFrameLength();
-            // TODO: let the duration depend on this
-
             thread = new Thread(this);
             thread.setName("Capture Microphone");
             thread.start();
