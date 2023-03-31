@@ -54,4 +54,11 @@ public class Sandglass {
 
         timer.scheduleAtFixedRate(scheduledTask, 0, updatePeriodInMillis);
     }
+
+    public void stopSandglass() {
+        if (scheduledTask != null) {
+            scheduledTask.cancel();
+        }
+        jProgressBar.setValue(0);
+    }
 }

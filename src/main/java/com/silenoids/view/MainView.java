@@ -24,8 +24,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.prefs.Preferences;
 
-import static javax.swing.JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT;
-
 public class MainView {
 
     private Preferences preferences;
@@ -147,6 +145,9 @@ public class MainView {
                     return;
                 }
 
+                if (player.isPlaying()) {
+                    player.stop();
+                }
                 player.loadAudioFile(inputDirPath, fileList.getSelectedValue());
                 inputTime.setText(player.getDurationText());
 
@@ -160,13 +161,12 @@ public class MainView {
             }
         });
 
-        // TODO: broader focus for hotkeys
-        // TODO: condition in which input and output dir are the same
-        fileList.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, InputEvent.CTRL_DOWN_MASK), "playInputAudio");
-        fileList.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, InputEvent.CTRL_DOWN_MASK), "playOutputAudio");
-        fileList.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.CTRL_DOWN_MASK), "recordOutputAudio");
-        fileList.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK), "copyFile");
-        fileList.getInputMap(WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK), "pasteFiles");
+        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, InputEvent.CTRL_DOWN_MASK), "playInputAudio");
+        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, InputEvent.CTRL_DOWN_MASK), "playOutputAudio");
+        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, InputEvent.CTRL_DOWN_MASK), "recordOutputAudio");
+        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK), "copyFile");
+        fileList.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_V, InputEvent.CTRL_DOWN_MASK), "pasteFiles");
+
         fileList.getActionMap().put("playInputAudio", new AbstractAction() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -285,7 +285,11 @@ public class MainView {
 
             Arrays.stream(Objects.requireNonNull(selectedDirFile.listFiles()))
                     .sorted()
-                    .forEach(file -> inputFileListModel.addElement(file.getName()));
+                    .forEach(file -> {
+                        if (file.getName().endsWith(".wav")) {
+                            inputFileListModel.addElement(file.getName());
+                        }
+                    });
 
             preferences.put("inputDir", selectedDirFile.getAbsolutePath());
         }
@@ -335,7 +339,7 @@ public class MainView {
 
     private void printThreads() {
         System.out.println("---Running thread list:");
-        Thread.getAllStackTraces().keySet().stream().map(Thread::getName).filter(s -> s.startsWith(" ")).sorted().forEach(System.out::println);
+        Thread.getAllStackTraces().keySet().stream().map(Thread::getName).sorted().forEach(System.out::println);
     }
 
     private void sendMessage(String msg) {

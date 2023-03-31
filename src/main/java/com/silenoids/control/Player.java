@@ -49,6 +49,7 @@ public class Player extends StreamPlayer implements StreamPlayerListener {
                 e.printStackTrace();
             }
         }
+        Sandglass.getInstance().stopSandglass();
     }
 
     public String getDurationText() {
