@@ -44,7 +44,7 @@ public class Player extends StreamPlayer implements StreamPlayerListener {
         super.stop();
         while (!canActuallyPlay) {
             try {
-                Thread.sleep(100);
+                Thread.sleep(5);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

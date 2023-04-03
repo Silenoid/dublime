@@ -18,7 +18,7 @@ public class App {
 
         FlatDarkFlatIJTheme.setup();
 
-        URL appIcon = App.class.getClassLoader().getResource("mic.png");
+        URL appIcon = App.class.getClassLoader().getResource("micr.png");
         ImageIcon imageIcon = new ImageIcon(appIcon);
 
         SwingUtilities.invokeLater(() -> {

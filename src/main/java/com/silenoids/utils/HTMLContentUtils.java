@@ -10,7 +10,6 @@ public class HTMLContentUtils {
                 img().withSrc(getImgSrc("donateBtn.png")),
                 br(),
                 img().withSrc(getImgSrc("giftest.gif"))
-
         ).render();
     }
 
