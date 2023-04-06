@@ -10,33 +10,38 @@ import java.io.IOException;
 
 public class Recorder implements Runnable {
     private AudioInputStream audioInputStream;
-    private AudioFormat format;
-    public Thread thread;
+    private AudioFormat audioFormat;
+    private Microphone microphone;
+    private Thread thread;
     private double duration;
 
     public void startWithAlias(String dirPath, String fileName) {
-        File aliasAudioFile = FileUtils.loadDirFile(dirPath, fileName);
+        File inputAudioFile = FileUtils.loadDirFile(dirPath, fileName);
 
         try {
-            AudioFileFormat aliasFileFormat = AudioSystem.getAudioFileFormat(aliasAudioFile);
+            AudioFileFormat inputAudioFormat = AudioSystem.getAudioFileFormat(inputAudioFile);
 
-            if(aliasFileFormat.getFormat().getSampleRate() == 22050) {
-                format = new AudioFormat(
-                        22000,
-                        16,
-                        1,
-                        true,
-                        true
-                );
-            } else {
-                format = aliasFileFormat.getFormat();
-            }
+            setStrangeL4DFormat(inputAudioFormat);
 
             thread = new Thread(this);
             thread.setName("Capture Microphone");
             thread.start();
         } catch (UnsupportedAudioFileException | IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void setStrangeL4DFormat(AudioFileFormat inputAudioFormat) {
+        if(inputAudioFormat.getFormat().getSampleRate() == 22050) {
+            audioFormat = new AudioFormat(
+                    22000,
+                    16,
+                    1,
+                    true,
+                    true
+            );
+        } else {
+            audioFormat = inputAudioFormat.getFormat();
         }
     }
 
@@ -49,7 +54,7 @@ public class Recorder implements Runnable {
         duration = 0;
 
         try (final ByteArrayOutputStream out = new ByteArrayOutputStream(); final TargetDataLine line = getTargetDataLineForRecord()) {
-            int frameSizeInBytes = format.getFrameSize();
+            int frameSizeInBytes = audioFormat.getFrameSize();
             int bufferLengthInFrames = line.getBufferSize() / 8;
             final int bufferLengthInBytes = bufferLengthInFrames * frameSizeInBytes;
             buildByteOutputStream(out, line, frameSizeInBytes, bufferLengthInBytes);
@@ -81,25 +86,33 @@ public class Recorder implements Runnable {
     public AudioInputStream convertToAudioIStream(final ByteArrayOutputStream out, int frameSizeInBytes) {
         byte[] audioBytes = out.toByteArray();
         ByteArrayInputStream bais = new ByteArrayInputStream(audioBytes);
-        AudioInputStream audioStream = new AudioInputStream(bais, format, audioBytes.length / frameSizeInBytes);
-        long milliseconds = (long) ((audioInputStream.getFrameLength() * 1000) / format.getFrameRate());
+        AudioInputStream audioStream = new AudioInputStream(bais, audioFormat, audioBytes.length / frameSizeInBytes);
+        long milliseconds = (long) ((audioInputStream.getFrameLength() * 1000) / audioFormat.getFrameRate());
         duration = milliseconds / 1000.0;
-        System.out.println("Recorded duration in seconds:" + duration);
+        System.out.println("Recorded duration in seconds: " + duration);
         return audioStream;
     }
 
+    // TODO: fix custom selected microphone, line is null
     public TargetDataLine getTargetDataLineForRecord() {
         TargetDataLine line;
-        DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
-        if (!AudioSystem.isLineSupported(info)) {
-            return null;
-        }
+
         try {
-            line = (TargetDataLine) AudioSystem.getLine(info);
-            line.open(format, line.getBufferSize());
+            if (microphone != null) {
+                line = (TargetDataLine) microphone.getLine();
+            } else {
+                DataLine.Info info = new DataLine.Info(TargetDataLine.class, audioFormat);
+                if (!AudioSystem.isLineSupported(info)) {
+                    return null;
+                }
+                line = (TargetDataLine) AudioSystem.getLine(info);
+            }
+            line.open(audioFormat, line.getBufferSize());
         } catch (final Exception ex) {
+            System.out.println("Something wrong with loading the line " + microphone);
             return null;
         }
+
         return line;
     }
 
@@ -107,20 +120,11 @@ public class Recorder implements Runnable {
         return audioInputStream;
     }
 
-    public AudioFormat getFormat() {
-        return format;
+    public Microphone getMicrophone() {
+        return microphone;
     }
 
-    public void setFormat(AudioFormat format) {
-        this.format = format;
+    public void setMicrophone(Microphone microphone) {
+        this.microphone = microphone;
     }
-
-    public Thread getThread() {
-        return thread;
-    }
-
-    public double getDuration() {
-        return duration;
-    }
-
 }

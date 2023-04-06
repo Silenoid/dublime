@@ -3,11 +3,13 @@ package com.silenoids.view;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
+import com.silenoids.control.Microphone;
 import com.silenoids.control.Player;
 import com.silenoids.control.Recorder;
 import com.silenoids.control.Sandglass;
 import com.silenoids.utils.FileUtils;
 
+import javax.sound.sampled.*;
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
@@ -42,10 +44,12 @@ public class MainView {
     private JCheckBox autoplayBox;
     private JButton donateBtn;
     private JButton helpBtn;
+    private JComboBox<Microphone> micComboBox;
 
     private String inputDirPath;
     private String outputDirPath;
     private DefaultListModel<String> inputFileListModel;
+    private DefaultComboBoxModel<Microphone> micBoxModel;
     private String copiedOutputFileName;
 
     public MainView() {
@@ -61,7 +65,39 @@ public class MainView {
     private void setupComponents() {
         Sandglass.getInstance(sandglassBar);
         inputFileListModel = new DefaultListModel<>();
+        micBoxModel = new DefaultComboBoxModel<>();
         fileList.setModel(inputFileListModel);
+        micComboBox.setModel(micBoxModel);
+        micComboBox.setRenderer((list, value, index, isSelected, cellHasFocus) -> {
+            JLabel jLabel = new JLabel();
+            if (index == -1 && recorder.getMicrophone() == null) {
+                jLabel.setText("Default microphone");
+            } else {
+                jLabel.setText(value.toString());
+                jLabel.setToolTipText(String.valueOf(value.getLineInfo()));
+            }
+            return jLabel;
+        });
+
+        Mixer.Info[] mixerInfos = AudioSystem.getMixerInfo();
+        for (Mixer.Info mixerInfo: mixerInfos){
+            System.out.println ("Mixer: " + mixerInfo);
+            Mixer currentMixer = AudioSystem.getMixer(mixerInfo);
+            Line.Info[] lineInfos = currentMixer.getSourceLineInfo();
+
+            for (Line.Info lineInfo: lineInfos){
+                try {
+                    System.out.println ("\tLine: " + lineInfo);
+                    Line line = currentMixer.getLine(lineInfo);
+                    micBoxModel.addElement(new Microphone(currentMixer, mixerInfo, line, lineInfo));
+                    System.out.println("\t\tInstance: " + line);
+                } catch (LineUnavailableException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        micComboBox.addActionListener(e -> recorder.setMicrophone(micBoxModel.getElementAt(micComboBox.getSelectedIndex())));
 
         fileList.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
             Color bgColor = UIManager.getColor("List.dropCellBackground");
@@ -320,7 +356,7 @@ public class MainView {
                 ex.printStackTrace();
             }
             FileUtils.saveAudioStreamToFile(outputDirPath, fileList.getSelectedValue(), recorder.getAudioInputStream());
-            printThreads();
+//            printThreads();
             setRecordingStateView(false);
 
         }, " MainView recording thread").start();
