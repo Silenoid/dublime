@@ -73,7 +73,8 @@ public class MainView {
             if (index == -1 && recorder.getMicrophone() == null) {
                 jLabel.setText("Default microphone");
             } else {
-                jLabel.setText(value.toString());
+                // TODO: remove text
+                jLabel.setText("Work in progress - " + value.toString());
                 jLabel.setToolTipText(String.valueOf(value.getLineInfo()));
             }
             return jLabel;
@@ -97,7 +98,8 @@ public class MainView {
             }
         }
 
-        micComboBox.addActionListener(e -> recorder.setMicrophone(micBoxModel.getElementAt(micComboBox.getSelectedIndex())));
+        //TODO: enable
+//        micComboBox.addActionListener(e -> recorder.setMicrophone(micBoxModel.getElementAt(micComboBox.getSelectedIndex())));
 
         fileList.setCellRenderer((list, value, index, isSelected, cellHasFocus) -> {
             Color bgColor = UIManager.getColor("List.dropCellBackground");

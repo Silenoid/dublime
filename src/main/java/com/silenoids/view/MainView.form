@@ -180,7 +180,7 @@
                 </constraints>
                 <properties>
                   <editable value="false"/>
-                  <enabled value="false"/>
+                  <enabled value="true"/>
                   <maximumRowCount value="20"/>
                   <name value=""/>
                 </properties>
