@@ -6,10 +6,13 @@ public class HTMLContentUtils {
     public static String getHelpContent() {
         return body(
                 h1("Helping you out!"),
-                p("wewe bello facimme"),
-                img().withSrc(getImgSrc("donateBtn.png")),
-                br(),
-                img().withSrc(getImgSrc("giftest.gif"))
+                    h2("cioè aspe!"),
+                        h3("ma quindi!"),
+                        code("questo è un codice"),
+                        br(),
+                        p("wewe bello facimme"),
+                        div(),
+                        img().withSrc(getImgSrc("donateBtn.png"))
         ).render();
     }
 

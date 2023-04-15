@@ -5,6 +5,8 @@ import com.formdev.flatlaf.FlatLaf;
 import com.silenoids.view.MainView;
 
 import javax.swing.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.net.URL;
 import java.util.Map;
 import java.util.logging.Level;
@@ -37,6 +39,13 @@ public class App {
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setIconImage(imageIcon.getImage());
             frame.setVisible(true);
+            frame.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    mainView.dispose();
+                    super.windowClosing(e);
+                }
+            });
         });
     }
 }

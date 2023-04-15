@@ -8,8 +8,12 @@ import com.silenoids.control.Player;
 import com.silenoids.control.Recorder;
 import com.silenoids.control.Sandglass;
 import com.silenoids.utils.FileUtils;
+import com.silenoids.utils.HttpClient;
 
-import javax.sound.sampled.*;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Line;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.Mixer;
 import javax.swing.*;
 import javax.swing.border.Border;
 import java.awt.*;
@@ -21,6 +25,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Objects;
@@ -45,6 +50,8 @@ public class MainView {
     private JButton donateBtn;
     private JButton helpBtn;
     private JComboBox<Microphone> micComboBox;
+    private JTextField usernameTextField;
+    private JCheckBox sendIFTTTCheckBox;
 
     private String inputDirPath;
     private String outputDirPath;
@@ -81,14 +88,14 @@ public class MainView {
         });
 
         Mixer.Info[] mixerInfos = AudioSystem.getMixerInfo();
-        for (Mixer.Info mixerInfo: mixerInfos){
-            System.out.println ("Mixer: " + mixerInfo);
+        for (Mixer.Info mixerInfo : mixerInfos) {
+            System.out.println("Mixer: " + mixerInfo);
             Mixer currentMixer = AudioSystem.getMixer(mixerInfo);
             Line.Info[] lineInfos = currentMixer.getSourceLineInfo();
 
-            for (Line.Info lineInfo: lineInfos){
+            for (Line.Info lineInfo : lineInfos) {
                 try {
-                    System.out.println ("\tLine: " + lineInfo);
+                    System.out.println("\tLine: " + lineInfo);
                     Line line = currentMixer.getLine(lineInfo);
                     micBoxModel.addElement(new Microphone(currentMixer, mixerInfo, line, lineInfo));
                     System.out.println("\t\tInstance: " + line);
@@ -146,7 +153,6 @@ public class MainView {
 
     private void setupHandlers() {
         inputDirBtn.addActionListener((ActionEvent e) -> {
-
             // Select dir
             JFileChooser fileChooser;
             if (inputDirPath != null && !inputDirPath.equals("Input Directory")) {
@@ -306,6 +312,18 @@ public class MainView {
             dialog.setVisible(true);
             dialog.dispose();
         });
+
+        sendIFTTTCheckBox.addActionListener(e -> {
+            String username = usernameTextField.getText();
+            if (username == null || username.isBlank() || username.equalsIgnoreCase("Username")) {
+                sendMessage("You must properly set a username before activating the IFTTT notification");
+                sendIFTTTCheckBox.setSelected(false);
+            }
+
+            preferences.put("username", username);
+            preferences.putBoolean("sendIFTTT", sendIFTTTCheckBox.isSelected());
+        });
+
     }
 
     private void outputDirSetup(File selectedDirPath) {
@@ -395,6 +413,21 @@ public class MainView {
         if (prefOutputDir != null && !prefOutputDir.isBlank()) {
             outputDirSetup(new File(prefOutputDir));
         }
+        usernameTextField.setText(preferences.get("username", "Username"));
+        sendIFTTTCheckBox.setSelected(preferences.getBoolean("sendIFTTT", false));
+    }
+
+    public void dispose() {
+        try {
+            if (sendIFTTTCheckBox.isSelected()) {
+                int inputCount = inputFileListModel.size();
+                int outputCount = new File(outputDirPath).listFiles().length;
+                int percentage = Math.round((float) (((float) inputCount / (float) outputCount) * 100.0));
+                HttpClient.sendIFTTTNotification(usernameTextField.getText(), percentage + "%25");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     {
@@ -431,6 +464,7 @@ public class MainView {
         panel1.add(scrollPane1, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         fileList = new JList();
         fileList.setLayoutOrientation(1);
+        fileList.setOpaque(true);
         fileList.setVisible(true);
         fileList.setVisibleRowCount(100);
         scrollPane1.setViewportView(fileList);
@@ -465,18 +499,39 @@ public class MainView {
         inputTime.setText("0:00");
         panel4.add(inputTime, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel5 = new JPanel();
-        panel5.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel5.setLayout(new GridLayoutManager(1, 7, new Insets(0, 0, 0, 0), -1, -1));
         panel1.add(panel5, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         donateBtn = new JButton();
         donateBtn.setIcon(new ImageIcon(getClass().getResource("/donateBtn.png")));
         donateBtn.setText("");
         donateBtn.setToolTipText("I'm sleepy");
-        panel5.add(donateBtn, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        panel5.add(donateBtn, new GridConstraints(0, 6, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final Spacer spacer2 = new Spacer();
-        panel5.add(spacer2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        panel5.add(spacer2, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
         helpBtn = new JButton();
-        helpBtn.setText("Help");
-        panel5.add(helpBtn, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        helpBtn.setEnabled(true);
+        helpBtn.setFocusable(true);
+        helpBtn.setIcon(new ImageIcon(getClass().getResource("/information-button.png")));
+        helpBtn.setMargin(new Insets(1, 1, 1, 1));
+        helpBtn.setOpaque(true);
+        helpBtn.setText("");
+        panel5.add(helpBtn, new GridConstraints(0, 5, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        micComboBox = new JComboBox();
+        micComboBox.setEditable(false);
+        micComboBox.setEnabled(true);
+        micComboBox.setMaximumRowCount(20);
+        micComboBox.setName("");
+        panel5.add(micComboBox, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label1 = new JLabel();
+        label1.setText("Selected microphone:");
+        panel5.add(label1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        usernameTextField = new JTextField();
+        usernameTextField.setText("Username");
+        usernameTextField.setToolTipText("");
+        panel5.add(usernameTextField, new GridConstraints(0, 3, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        sendIFTTTCheckBox = new JCheckBox();
+        sendIFTTTCheckBox.setText("Send IFTTT notification");
+        panel5.add(sendIFTTTCheckBox, new GridConstraints(0, 4, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
     }
 
     /**
