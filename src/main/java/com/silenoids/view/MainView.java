@@ -339,13 +339,17 @@ public class MainView {
             inputDirPath = selectedDirFile.getPath();
             inputDirBtn.setText(inputDirPath);
 
-            Arrays.stream(Objects.requireNonNull(selectedDirFile.listFiles()))
-                    .sorted()
-                    .forEach(file -> {
-                        if (file.getName().endsWith(".wav")) {
-                            inputFileListModel.addElement(file.getName());
-                        }
-                    });
+            File[] inputFiles = selectedDirFile.listFiles();
+            if (inputFiles != null) {
+                inputFileListModel.clear();
+                Arrays.stream(inputFiles)
+                        .sorted()
+                        .forEach(file -> {
+                            if (file.getName().endsWith(".wav")) {
+                                inputFileListModel.addElement(file.getName());
+                            }
+                        });
+            }
 
             preferences.put("inputDir", selectedDirFile.getAbsolutePath());
         }
