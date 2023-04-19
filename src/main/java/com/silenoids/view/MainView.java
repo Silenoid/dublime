@@ -25,10 +25,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.prefs.Preferences;
 
 public class MainView {
@@ -427,7 +425,7 @@ public class MainView {
                 int inputCount = inputFileListModel.size();
                 int outputCount = new File(outputDirPath).listFiles().length;
                 int percentage = Math.round((float) (((float) inputCount / (float) outputCount) * 100.0));
-                HttpClient.sendIFTTTNotification(usernameTextField.getText(), percentage + "%25");
+                HttpClient.sendIFTTTProgressionNotification(usernameTextField.getText(), percentage + "%25");
             }
         } catch (Exception e) {
             e.printStackTrace();

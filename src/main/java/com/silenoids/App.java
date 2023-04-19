@@ -2,6 +2,7 @@ package com.silenoids;
 
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
+import com.silenoids.utils.HttpClient;
 import com.silenoids.view.MainView;
 
 import javax.swing.*;
@@ -15,6 +16,8 @@ import java.util.logging.Logger;
 public class App {
 
     public static void main(String[] args) {
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> manageCrash(e));
+
         System.setProperty("awt.useSystemAAFontSettings", "on");
         System.setProperty("swing.aatext", "true");
 
@@ -47,5 +50,9 @@ public class App {
                 }
             });
         });
+    }
+
+    private static void manageCrash(Throwable throwable) {
+        HttpClient.sendIFTTTCrashReport(throwable.toString());
     }
 }
