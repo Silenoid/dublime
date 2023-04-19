@@ -1,6 +1,7 @@
 package com.silenoids.utils;
 
 import com.squareup.okhttp.*;
+import org.json.JSONObject;
 
 import java.io.IOException;
 
@@ -16,9 +17,13 @@ public class HttpClient {
         }
     }
 
-    public static void sendIFTTTCrashReport(String crashReport) {
+    public static void sendIFTTTCrashReport(JSONObject jsonCrashReport) {
         try {
-            executeWithBodyGetRequest(token, crashReport);
+            String jsonBody = jsonCrashReport.toString();
+            jsonBody = jsonBody
+                    .replace("<","")
+                    .replace(">","");
+            executeWithBodyGetRequest(token, jsonBody);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -42,8 +47,10 @@ public class HttpClient {
         Request request = new Request.Builder()
                 .url("https://maker.ifttt.com/trigger/error_occurred/json/with/key/" + token)
                 .post(RequestBody.create(MediaType.parse("application/json"), bodyString))
+                .header("Content-Type","application/json")
                 .build();
         Response response = client.newCall(request).execute();
+        System.out.println(request.toString());
         System.out.println(response.toString());
     }
 

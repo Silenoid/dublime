@@ -4,11 +4,13 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.FlatLaf;
 import com.silenoids.utils.HttpClient;
 import com.silenoids.view.MainView;
+import org.json.JSONObject;
 
 import javax.swing.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -53,6 +55,9 @@ public class App {
     }
 
     private static void manageCrash(Throwable throwable) {
-        HttpClient.sendIFTTTCrashReport(throwable.toString());
+        HttpClient.sendIFTTTCrashReport(new JSONObject(Map.of(
+                "error_message", throwable.getMessage(),
+                "stack_trace", Arrays.toString(throwable.getStackTrace())
+        )));
     }
 }
