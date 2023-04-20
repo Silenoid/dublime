@@ -11,7 +11,7 @@ public class HttpClient {
 
     public static void sendIFTTTProgressionNotification(String username, String percentage) {
         try {
-            executeNoBodyGetRequest(username, percentage, token);
+            executeNoBodyGetRequest(token, username, percentage);
         } catch (IOException e) {
             e.printStackTrace();
         }
