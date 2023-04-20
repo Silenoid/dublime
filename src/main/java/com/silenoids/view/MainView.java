@@ -424,7 +424,7 @@ public class MainView {
             if (sendIFTTTCheckBox.isSelected()) {
                 int inputCount = inputFileListModel.size();
                 int outputCount = new File(outputDirPath).listFiles().length;
-                int percentage = Math.round((float) (((float) inputCount / (float) outputCount) * 100.0));
+                int percentage = Math.round((float) (((float) outputCount / (float) inputCount) * 100.0));
                 HttpClient.sendIFTTTProgressionNotification(usernameTextField.getText(), percentage + "%25");
             }
         } catch (Exception e) {
