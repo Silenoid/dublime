@@ -27,7 +27,7 @@ public class App {
 
         FlatLaf.setGlobalExtraDefaults(Map.of(
                 "@accentColor", "#ffdd00",
-                "@background" , "#292929",
+                "@background" , "#2A2E24",
                 "@foreground" , "#E0D3DE"
         ));
         FlatDarkLaf.setup();
@@ -37,7 +37,7 @@ public class App {
 
         SwingUtilities.invokeLater(() -> {
             MainView mainView = new MainView();
-            JFrame frame = new JFrame("Alias recorder");
+            JFrame frame = new JFrame("Dublime");
             frame.setSize(1600, 900);
             frame.setLocationRelativeTo(null);  //center
             frame.setContentPane(mainView.mainPanel);

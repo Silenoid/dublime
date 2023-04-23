@@ -404,6 +404,7 @@ public class MainView {
         JOptionPane.showMessageDialog(mainPanel, msg);
     }
 
+    // TODO: move to preference class
     private void loadPreferences() {
         preferences = Preferences.userNodeForPackage(MainView.class);
         autoplayBox.setSelected(preferences.getBoolean("autoplayEnabled", true));
@@ -419,6 +420,9 @@ public class MainView {
         sendIFTTTCheckBox.setSelected(preferences.getBoolean("sendIFTTT", false));
     }
 
+    //TODO: Preference dialog
+
+    // TODO: Crash report dialog and button to send
     public void dispose() {
         try {
             if (sendIFTTTCheckBox.isSelected()) {

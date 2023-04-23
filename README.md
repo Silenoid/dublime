@@ -1,4 +1,4 @@
-# Alias Recorder
+# Dublime
 
 This tool is born with the main purpose of recording counter-audio files contained in a directory, like Source Engine audio files.
 
