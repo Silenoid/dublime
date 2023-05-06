@@ -18,13 +18,20 @@ import java.util.logging.Logger;
 public class App {
 
     public static void main(String[] args) {
-        Thread.setDefaultUncaughtExceptionHandler((t, e) -> manageCrash(e));
+        // Manage app crashes cases
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            HttpClient.sendIFTTTCrashReport(new JSONObject(Map.of(
+                    "error_message", e.getMessage(),
+                    "stack_trace", Arrays.toString(e.getStackTrace())
+            )));
+        });
 
+        // General properties settings
         System.setProperty("awt.useSystemAAFontSettings", "on");
         System.setProperty("swing.aatext", "true");
-
         Logger.getLogger("com.goxr3plus.streamplayer.stream.StreamPlayer").setLevel(Level.OFF);
 
+        // Flatlaf specific settings
         FlatLaf.setGlobalExtraDefaults(Map.of(
                 "@accentColor", "#ffdd00",
                 "@background" , "#2A2E24",
@@ -32,9 +39,11 @@ public class App {
         ));
         FlatDarkLaf.setup();
 
+        // Loading the icon
         URL appIcon = App.class.getClassLoader().getResource("micr.png");
         ImageIcon imageIcon = new ImageIcon(appIcon);
 
+        // Main window frame creation
         SwingUtilities.invokeLater(() -> {
             MainView mainView = new MainView();
             JFrame frame = new JFrame("Dublime");
@@ -54,10 +63,4 @@ public class App {
         });
     }
 
-    private static void manageCrash(Throwable throwable) {
-        HttpClient.sendIFTTTCrashReport(new JSONObject(Map.of(
-                "error_message", throwable.getMessage(),
-                "stack_trace", Arrays.toString(throwable.getStackTrace())
-        )));
-    }
 }
